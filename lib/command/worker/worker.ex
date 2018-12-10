@@ -28,10 +28,12 @@ defmodule ElixiumWalletCli.Command.Worker do
     IO.puts "Commands:"
     IO.puts("• help")
     IO.puts("• status")
-    IO.puts("• create_wallet")
-    IO.puts("• load_wallet")
+    IO.puts("• create_wallet <file_name>")
+    IO.puts("• load_wallet <file_name>")
     IO.puts("• address")
     IO.puts("• balance")
+    IO.puts("• passphrase (`Generate mnemonic passphrase for current wallet`)")
+    IO.puts("• send <address> <amount>")
     IO.puts("• exit")
     IO.puts("Type help <command> to see usage.")
   end
@@ -63,12 +65,20 @@ defmodule ElixiumWalletCli.Command.Worker do
   end
 
   defp handle_command(["load_wallet", file_name]) do
-    {public, private} = WalletWorker.load_keyfile(file_name)
-    ElixiumWalletCli.Command.Data.set_current_key( {public, private})
-    address = Elixium.KeyPair.address_from_pubkey(public)
-    IO.puts("New keypair loaded.")
-    IO.puts("The working key for wallet now updated.")
-    IO.puts("Your address: #{address}")
+
+    with {public, private} <- WalletWorker.load_keyfile(file_name) do
+      ElixiumWalletCli.Command.Data.set_current_key( {public, private})
+      address = Elixium.KeyPair.address_from_pubkey(public)
+      IO.puts("New keypair loaded.")
+      IO.puts("The working key for wallet now updated.")
+      IO.puts("Your address: #{address}")
+
+    else
+      err ->
+        IO.puts("Error loading wallet. Please try again!")
+        IO.inspect(err)
+
+    end
   end
 
   defp handle_command(["balance"]) do
@@ -80,10 +90,22 @@ defmodule ElixiumWalletCli.Command.Worker do
     IO.puts("Balance: #{balance}")
   end
 
+  defp handle_command(["passphrase"]) do
+    {public, private} = ElixiumWalletCli.Command.Data.get_current_key()
+    mnemonic = Elixium.Mnemonic.from_entropy(private)
+    IO.puts("Passphrase: `#{mnemonic}`")
+    IO.puts("Remember write down your Mnemonic or Private Key somewhere safe to backup your wallet.")
+  end
+
+  defp handle_command(["send", address, amount]) do
+    IO.puts("Sending #{amount} to #{address}")
+  end
+
 
   defp handle_command(_other) do
     IO.puts("No matching command.")
   end
+
 
 
 end

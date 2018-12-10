@@ -8,6 +8,7 @@ defmodule ElixiumWalletCli.PeerRouter do
   alias Elixium.Block
   alias Elixium.Transaction
   alias Elixium.Validator
+  alias ElixiumWalletCli.Utils
 
   def start_link(_args) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -112,10 +113,13 @@ defmodule ElixiumWalletCli.PeerRouter do
         block = Block.sanitize(block)
 
         if LedgerManager.handle_new_block(block) == :ok do
-          Logger.info("Syncing blocks #{round(((i + 1) / length(block_query_response.blocks)) * 100)}% [#{i + 1}/#{length(block_query_response.blocks)}]\r")
+          Logger.info("Syncing blocks #{round(((i + 1) / length(block_query_response.blocks)) * 100)}% [#{i + 1}/#{length(block_query_response.blocks)}]")
+          IO.write([Utils.clear_line_prefix(), "Syncing blocks #{round(((i + 1) / length(block_query_response.blocks)) * 100)}% [#{i + 1}/#{length(block_query_response.blocks)}]"])
         end
       end)
 
+#      IO.write(Utils.ansi_prefix())
+#      IO.write("\n")
       Logger.info("Block Sync Complete\n")
     end
 

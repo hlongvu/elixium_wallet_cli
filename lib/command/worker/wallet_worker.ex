@@ -13,8 +13,11 @@ defmodule ElixiumWalletCli.Command.Worker.WalletWorker do
 
 
   def load_keyfile(filename) do
-    {public, private} = Elixium.KeyPair.get_from_file("#{filename}.key")
-    {public, private}
+    with {public, private} <- Elixium.KeyPair.get_from_file("#{filename}.key") do
+      {public, private}
+    else
+      err -> err
+    end
   end
 
 
