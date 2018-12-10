@@ -84,9 +84,7 @@ defmodule ElixiumWalletCli.Command.Worker do
   defp handle_command(["balance"]) do
     {public, private} = ElixiumWalletCli.Command.Data.get_current_key()
     address = Elixium.KeyPair.address_from_pubkey(public)
-    balance =
-      GenServer.call(:"Elixir.Elixium.Store.UtxoOracle", {:find_by_address, [address]}, 60000)
-      |> Enum.reduce(0, fn utxo, acc -> acc + D.to_float(utxo.amount) end)
+    balance = WalletWorker.balance(address)
     IO.puts("Balance: #{balance}")
   end
 
@@ -98,7 +96,7 @@ defmodule ElixiumWalletCli.Command.Worker do
   end
 
   defp handle_command(["send", address, amount]) do
-    IO.puts("Sending #{amount} to #{address}")
+    WalletWorker.send(address, amount)
   end
 
 

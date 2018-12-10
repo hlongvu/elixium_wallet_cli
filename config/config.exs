@@ -43,3 +43,6 @@ config :logger, :info,
 config :logger, :error,
        path: "./log/error.log",
        level: :error
+
+config :elixium_wallet_cli,
+       default_fee: 1.0

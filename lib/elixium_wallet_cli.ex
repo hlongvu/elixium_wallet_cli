@@ -15,7 +15,7 @@ defmodule ElixiumWalletCli do
 
     ElixiumWalletCli.Supervisor.start_link()
 
-#    ElixiumWalletCli.Command.Supervisor.start_link()
+    ElixiumWalletCli.Command.Supervisor.start_link()
 
   end
 
