@@ -7,8 +7,6 @@ defmodule ElixiumWalletCli.Command.Data do
     with [{"current_key", key}] <- :ets.lookup(:key, "current_key") do
 #      IO.inspect(key)
       key
-    else
-      IO.puts("Error loading current key.")
     end
   end
 

@@ -1,6 +1,7 @@
 defmodule ElixiumWalletCli.Command.Worker do
   use GenServer
   require Logger
+  alias Decimal, as: D
 
   alias ElixiumWalletCli.Command.Worker.WalletWorker
 
@@ -70,7 +71,14 @@ defmodule ElixiumWalletCli.Command.Worker do
     IO.puts("Your address: #{address}")
   end
 
-
+  defp handle_command(["balance"]) do
+    {public, private} = ElixiumWalletCli.Command.Data.get_current_key()
+    address = Elixium.KeyPair.address_from_pubkey(public)
+    balance =
+      GenServer.call(:"Elixir.Elixium.Store.UtxoOracle", {:find_by_address, [address]}, 60000)
+      |> Enum.reduce(0, fn utxo, acc -> acc + D.to_float(utxo.amount) end)
+    IO.puts("Balance: #{balance}")
+  end
 
 
   defp handle_command(_other) do
