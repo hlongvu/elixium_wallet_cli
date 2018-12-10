@@ -2,6 +2,7 @@ defmodule ElixiumWalletCli.Command.Worker do
   use GenServer
   require Logger
   alias Decimal, as: D
+  alias Elixium.Store.Ledger
 
   alias ElixiumWalletCli.Command.Worker.WalletWorker
 
@@ -38,10 +39,9 @@ defmodule ElixiumWalletCli.Command.Worker do
     IO.puts("Type help <command> to see usage.")
   end
 
-
   defp handle_command(["status"]) do
-    IO.puts("Status:...")
-
+    last_block = Ledger.last_block()
+    IO.puts("Last block: #{:binary.decode_unsigned(last_block.index)}")
   end
 
   defp handle_command(["exit"]) do
