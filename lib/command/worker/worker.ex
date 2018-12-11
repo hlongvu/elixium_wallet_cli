@@ -19,7 +19,7 @@ defmodule ElixiumWalletCli.Command.Worker do
   end
 
   def handle_call({:run_command, command}, _caller, state) do
-    IO.inspect command
+#    IO.inspect command
     handle_command(command)
     {:reply, 1,  state}
   end
@@ -33,8 +33,9 @@ defmodule ElixiumWalletCli.Command.Worker do
     IO.puts("• load_wallet <file_name>")
     IO.puts("• address")
     IO.puts("• balance")
-    IO.puts("• passphrase (`Generate mnemonic passphrase for current wallet`)")
+    IO.puts("• seed (`Generate mnemonic seed for current wallet`)")
     IO.puts("• send <address> <amount>")
+    IO.puts("• block <index>")
     IO.puts("• exit")
     IO.puts("Type help <command> to see usage.")
   end
@@ -82,17 +83,25 @@ defmodule ElixiumWalletCli.Command.Worker do
   end
 
   defp handle_command(["balance"]) do
-    {public, private} = ElixiumWalletCli.Command.Data.get_current_key()
-    address = Elixium.KeyPair.address_from_pubkey(public)
-    balance = WalletWorker.balance(address)
-    IO.puts("Balance: #{balance}")
+    with {public, private} <- ElixiumWalletCli.Command.Data.get_current_key() do
+      address = Elixium.KeyPair.address_from_pubkey(public)
+      balance = WalletWorker.balance(address)
+      IO.puts("Balance: #{balance}")
+    else
+     err ->
+       wallet_not_loaded()
+    end
   end
 
-  defp handle_command(["passphrase"]) do
-    {public, private} = ElixiumWalletCli.Command.Data.get_current_key()
-    mnemonic = Elixium.Mnemonic.from_entropy(private)
-    IO.puts("Passphrase: `#{mnemonic}`")
-    IO.puts("Remember write down your Mnemonic or Private Key somewhere safe to backup your wallet.")
+  defp handle_command(["seed"]) do
+    with {public, private} <- ElixiumWalletCli.Command.Data.get_current_key() do
+      mnemonic = Elixium.Mnemonic.from_entropy(private)
+      IO.puts("Passphrase: `#{mnemonic}`")
+      IO.puts("Remember write down your Mnemonic or Private Key somewhere safe to backup your wallet.")
+    else
+      err ->
+        wallet_not_loaded()
+    end
   end
 
   defp handle_command(["send", address, amount]) do
@@ -100,10 +109,20 @@ defmodule ElixiumWalletCli.Command.Worker do
   end
 
 
+  defp handle_command(["block", index]) do
+    {id, _} = Integer.parse(index)
+    block = Ledger.block_at_height(id)
+    IO.puts("Block at index: #{id}")
+    IO.inspect(block)
+  end
+
   defp handle_command(_other) do
     IO.puts("No matching command.")
   end
 
 
+  defp wallet_not_loaded() do
+    IO.puts("Please specify a working wallet with command: create_wallet or load_wallet first.")
+  end
 
 end
