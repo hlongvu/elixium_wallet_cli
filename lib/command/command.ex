@@ -65,7 +65,18 @@ defmodule ElixiumWalletCli.Command do
         IO.puts("Creating wallet #{confirm_name}....")
         IO.puts("The wallet will generate two files: #{confirm_name}.key contains your private key and #{confirm_name}.address contains your address")
 
-        create_wallet(confirm_name)
+        IO.puts("Options:")
+        IO.puts("[1]. Generate a new wallet")
+        IO.puts("[2]. Import a wallet from seeds")
+        IO.puts("[other]. Exit")
+        option = IO.gets("Choose option:")
+        option = String.trim(option)
+        case option do
+          "1" -> create_wallet(confirm_name)
+          "2" -> load_seed(wallet_name)
+          _ -> System.stop(0)
+        end
+        #create_wallet(confirm_name)
 
       else
         IO.puts("Wallet name not match. Please try again!")
@@ -99,6 +110,17 @@ defmodule ElixiumWalletCli.Command do
     end
   end
 
-
+  defp load_seed(wallet_name) do
+      seeds = IO.gets("Input your seeds: ")
+      seeds = String.trim(seeds)
+      IO.puts(seeds)
+      key_pair = Elixium.KeyPair.gen_keypair(seeds)
+      {:ok, private, address} = WalletWorker.create_keyfile(wallet_name, key_pair)
+      ElixiumWalletCli.Command.Data.set_current_key(key_pair)
+      IO.puts("New keypair imported.")
+      IO.puts("Your address: #{address}")
+#      mnemonic = Elixium.Mnemonic.from_entropy(private)
+#      IO.puts("Your wallet seed words: `#{mnemonic}`")
+  end
 
 end
