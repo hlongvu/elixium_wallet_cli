@@ -1,21 +1,8 @@
 # ElixiumWalletCli
 
-**TODO: Add description**
-
-## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `elixium_wallet_cli` to your list of dependencies in `mix.exs`:
+Compile and run the wallet
 
 ```elixir
-def deps do
-  [
-    {:elixium_wallet_cli, "~> 0.1.0"}
-  ]
-end
+ mix deps.get
+ mix run --no-halt
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/elixium_wallet_cli](https://hexdocs.pm/elixium_wallet_cli).
-
