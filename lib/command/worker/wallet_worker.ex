@@ -2,6 +2,7 @@ defmodule ElixiumWalletCli.Command.Worker.WalletWorker do
   alias Decimal, as: D
   alias Elixium.Transaction
   alias Elixium.Node.Supervisor, as: Peer
+  alias ElixiumWalletCli.Command.Worker.WalletWorker
 
 
   def create_keyfile(file_name, {public, private}) do

@@ -122,7 +122,7 @@ defmodule ElixiumWalletCli.PeerRouter do
 #      IO.write("\n")
       Logger.info("Block Sync Complete\n")
 
-      ElixiumWalletCli.start_commander()
+      ElixiumWalletCli.start_command()
 
     end
 

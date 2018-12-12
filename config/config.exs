@@ -33,7 +33,7 @@ config :elixium_core,
 
 
 config :logger,
-       backends: [{LoggerFileBackend, :info}],
+       backends: [{LoggerFileBackend, :info}, {LoggerFileBackend, :error}],
        level: :info
 
 config :logger, :info,

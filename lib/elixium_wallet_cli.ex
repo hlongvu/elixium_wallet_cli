@@ -19,15 +19,16 @@ defmodule ElixiumWalletCli do
 
   end
 
-  def start_commander() do
-    case Process.whereis(:"Elixir.ElixiumWalletCli.Command.Supervisor") do
-      nil ->
-        IO.puts("\nStarting Commander")
-        ElixiumWalletCli.Command.Supervisor.start_link()
-      pid ->
-#        IO.puts("Commander is started")
-        pid
-    end
+
+  def start_command() do
+        case Process.whereis(:"Elixir.ElixiumWalletCli.Command.Supervisor") do
+          nil ->
+            IO.puts("\nStarting Commander")
+            ElixiumWalletCli.Command.Supervisor.start_link()
+          pid ->
+#            IO.puts("Commander is started")
+            pid
+        end
   end
 
 end

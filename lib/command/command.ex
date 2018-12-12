@@ -1,7 +1,7 @@
 defmodule ElixiumWalletCli.Command do
   use GenServer
   require Logger
-#  alias ElixiumWalletCli.Command.Worker
+  alias ElixiumWalletCli.Command.Worker.WalletWorker
 
   @worker "Elixir.ElixiumWalletCli.Command.Worker"
 
@@ -11,8 +11,8 @@ defmodule ElixiumWalletCli.Command do
 
   def init(_args) do
     ElixiumWalletCli.Command.Data.setup_cache()
-    schedule_work()
-    {:ok, %{}}
+    Process.send_after(self(), :load_wallet, 1_000)
+    {:ok, 1}
   end
 
   defp schedule_work() do
@@ -39,6 +39,66 @@ defmodule ElixiumWalletCli.Command do
   defp run_command(input) do
     ElixiumWalletCli.Command.Worker.run_command(input)
   end
+
+
+
+  # loading wallet on startup
+  def handle_info(:load_wallet, state) do
+    IO.puts("Specify wallet file name (e.g., MyWallet). If the wallet doesn't exist, it will be created.")
+    IO.puts("Wallet is a file name without extension (the .key and .address extensions will be generate automatically).")
+
+    wallet_name = IO.gets("Wallet name (or Ctrl-C to quit): ")
+    wallet_name = String.trim(wallet_name)
+    wallet_file = "#{wallet_name}.key"
+
+    if File.exists?(wallet_file) do
+      Logger.info("Load wallet #{wallet_file}")
+      IO.puts("Wallet  #{wallet_file} found!")
+
+      load_wallet(wallet_name)
+
+    else
+      confirm_name = IO.gets("No wallet found with name #{wallet_file}. Re-type your wallet name to create a new wallet or else to exit: ")
+      confirm_name = String.trim(confirm_name)
+      if confirm_name == wallet_name do
+        Logger.info("Creating wallet #{wallet_file}")
+        IO.puts("Creating wallet #{confirm_name}....")
+        IO.puts("The wallet will generate two files: #{confirm_name}.key contains your private key and #{confirm_name}.address contains your address")
+
+        create_wallet(confirm_name)
+
+      else
+        IO.puts("Wallet name not match. Please try again!")
+        System.stop(0)
+      end
+    end
+    schedule_work()
+    #    {:stop, :normal, state}
+    {:noreply, state}
+  end
+
+
+  defp create_wallet(wallet_name) do
+    key_pair = Elixium.KeyPair.create_keypair
+    {:ok, private, address} = WalletWorker.create_keyfile(wallet_name, key_pair)
+    ElixiumWalletCli.Command.Data.set_current_key(key_pair)
+    IO.puts("New keypair generated.")
+    IO.puts("Your address: #{address}")
+
+    mnemonic = Elixium.Mnemonic.from_entropy(private)
+    IO.puts("Your wallet seed words: `#{mnemonic}`")
+    IO.puts("Remember to write down your seed words somewhere safe to backup your wallet.")
+  end
+
+  defp load_wallet(wallet_name) do
+    with {public, private} <- WalletWorker.load_keyfile(wallet_name) do
+      ElixiumWalletCli.Command.Data.set_current_key( {public, private})
+      address = Elixium.KeyPair.address_from_pubkey(public)
+      IO.puts("Wallet loaded.")
+      IO.puts("Your address: #{address}")
+    end
+  end
+
 
 
 end

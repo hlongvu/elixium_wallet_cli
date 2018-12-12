@@ -28,7 +28,7 @@ defmodule ElixiumWalletCli.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:elixium_core, path: "/Users/long/Works/Elixir/elixium_core", app: false},
+      {:elixium_core, "~> 0.5"},
       {:logger_file_backend, "~> 0.0.10"}
     ]
   end
