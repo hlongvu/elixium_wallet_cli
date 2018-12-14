@@ -28,6 +28,11 @@ defmodule ElixiumWalletCli.PeerRouter do
           # this block to all the nodes we know of.
           # Logger.info("Received valid block #{block.hash} at index #{:binary.decode_unsigned(block.index)}.")
           Peer.gossip("BLOCK", block)
+
+          Enum.each block.transactions, fn tx ->
+            ElixiumWalletCli.Command.Data.update_confirmed_transaction(tx)
+          end
+
           %{state | known_transactions: state.known_transactions -- [block.transactions]}
 
         :gossip ->
@@ -47,7 +52,7 @@ defmodule ElixiumWalletCli.PeerRouter do
           state
 
         :invalid ->
-#          Logger.info("Recieved invalid block at index #{:binary.decode_unsigned(block.index)}.")
+          Logger.info("Recieved invalid block at index #{:binary.decode_unsigned(block.index)}.")
           state
       end
 
@@ -136,7 +141,7 @@ defmodule ElixiumWalletCli.PeerRouter do
       if Validator.valid_transaction?(transaction) do
         if transaction not in state.known_transactions do
           <<shortid::bytes-size(20), _rest::binary>> = transaction.id
-#          Logger.info("Received transaction \e[32m#{shortid}...\e[0m")
+          Logger.info("Received transaction \e[32m#{shortid}...\e[0m")
           Peer.gossip("TRANSACTION", transaction)
 
           %{state | known_transactions: [transaction | state.known_transactions]}
@@ -144,7 +149,7 @@ defmodule ElixiumWalletCli.PeerRouter do
           state
         end
       else
-#        Logger.info("Received Invalid Transaction. Ignoring.")
+        Logger.info("Received Invalid Transaction. Ignoring.")
         state
       end
 

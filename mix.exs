@@ -4,7 +4,7 @@ defmodule ElixiumWalletCli.MixProject do
   def project do
     [
       app: :elixium_wallet_cli,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps()
@@ -29,7 +29,8 @@ defmodule ElixiumWalletCli.MixProject do
   defp deps do
     [
       {:elixium_core, "~> 0.6.0"},
-      {:logger_file_backend, "~> 0.0.10"}
+      {:logger_file_backend, "~> 0.0.10"},
+      {:scribe, "~> 0.8"}
     ]
   end
 end

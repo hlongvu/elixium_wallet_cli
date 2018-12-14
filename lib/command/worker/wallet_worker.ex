@@ -3,7 +3,8 @@ defmodule ElixiumWalletCli.Command.Worker.WalletWorker do
   alias Elixium.Transaction
   alias Elixium.Node.Supervisor, as: Peer
   alias ElixiumWalletCli.Command.Worker.WalletWorker
-
+  alias ElixiumWalletCli.Command.Data
+  alias ElixiumWalletCli.Store.FlagUtxo
 
   def create_keyfile(file_name, {public, private}) do
     write_file("#{file_name}.key", private)
@@ -34,26 +35,29 @@ defmodule ElixiumWalletCli.Command.Worker.WalletWorker do
   def send(to_address, amount) do
     {amount, _} = amount |> Float.parse()
     amount = D.from_float(amount)
+    if is_valid_address(to_address) do
+#      IO.puts("OK address: #{is_valid_address(to_address)}")
+      {public, private} = Data.get_current_key()
 
-    IO.puts("OK address: #{is_valid_address(to_address)}")
-    {public, private} = ElixiumWalletCli.Command.Data.get_current_key()
+      my_address = Elixium.KeyPair.address_from_pubkey(public)
+      fee = Application.get_env(:elixium_wallet_cli, :default_fee) |> D.from_float()
 
-    my_address = Elixium.KeyPair.address_from_pubkey(public)
-    fee = Application.get_env(:elixium_wallet_cli, :default_fee) |> D.from_float()
+      case build_transaction(private, my_address, to_address, amount, fee) do
+        :not_enough_balance ->
+          IO.puts("Not enough balance")
+        :sent ->
+          IO.puts("Sent")
+        :invalid ->
+          IO.puts("Transaction invalid!")
+        :error ->
+          IO.puts("Gossip error!")
+        other ->
+          IO.inspect(other)
+      end
 
-    case build_transaction(private, my_address, to_address, amount, fee) do
-      :not_enough_balance ->
-        IO.puts("Not enough balance")
-      :sent ->
-        IO.puts("Sent")
-      :invalid ->
-        IO.puts("Transaction invalid!")
-      :error ->
-        IO.puts("Gossip error!")
-      other ->
-        IO.inspect(other)
+    else
+      IO.puts("Receiver address is not valid!")
     end
-
 
   end
 
@@ -68,7 +72,10 @@ defmodule ElixiumWalletCli.Command.Worker.WalletWorker do
   end
 
   defp find_suitable_inputs(my_address, amount) do
-    GenServer.call(:"Elixir.Elixium.Store.UtxoOracle", {:find_by_address, [my_address]}, 60000)
+    all_utxos = GenServer.call(:"Elixir.Elixium.Store.UtxoOracle", {:find_by_address, [my_address]}, 60000)
+    flag_utxos = FlagUtxo.get_flag_utxos()
+
+    all_utxos -- flag_utxos
     |> Enum.sort(&(:lt == D.cmp(&1.amount, &2.amount)))
     |> Transaction.take_necessary_utxos(amount)
   end
@@ -78,13 +85,18 @@ defmodule ElixiumWalletCli.Command.Worker.WalletWorker do
     transaction = new_transaction(priv, my_address, to_address, amount, fee)
     if transaction !== :not_enough_balance do
       with true <- Elixium.Validator.valid_transaction?(transaction) do
+        transaction.inputs |> FlagUtxo.store_flag_utxos()
         if Peer.gossip("TRANSACTION", transaction) == :ok do
+          Data.put_transaction(transaction, amount, :pending)
           :sent
         else
+          Data.put_transaction(transaction, amount, :error)
           :error
         end
       else
-        _err -> :invalid
+        _err ->
+          Data.put_transaction(transaction, amount, :invalid)
+          :invalid
       end
     else
       :not_enough_balance

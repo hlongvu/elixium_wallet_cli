@@ -3,8 +3,9 @@ defmodule ElixiumWalletCli.Command.Worker do
   require Logger
   alias Decimal, as: D
   alias Elixium.Store.Ledger
-
+  alias ElixiumWalletCli.Command.Data
   alias ElixiumWalletCli.Command.Worker.WalletWorker
+  alias ElixiumWalletCli.Store.FlagUtxo
 
   def start_link(_args) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -35,6 +36,8 @@ defmodule ElixiumWalletCli.Command.Worker do
     IO.puts("• seed (`Generate mnemonic seed for current wallet`)")
     IO.puts("• send <address> <amount>")
     IO.puts("• block <index>")
+    IO.puts("• history (`See transactions history`)")
+    IO.puts("• debug")
     IO.puts("• exit")
     IO.puts("Type help <command> to see usage.")
   end
@@ -50,7 +53,7 @@ defmodule ElixiumWalletCli.Command.Worker do
 
 
   defp handle_command(["address"]) do
-    {public, private} = ElixiumWalletCli.Command.Data.get_current_key()
+    {public, private} = Data.get_current_key()
     address = Elixium.KeyPair.address_from_pubkey(public)
     IO.puts("Your address: #{address}")
   end
@@ -109,6 +112,29 @@ defmodule ElixiumWalletCli.Command.Worker do
     block = Ledger.block_at_height(id)
     IO.puts("Block at index: #{id}")
     IO.inspect(block)
+  end
+
+
+  defp handle_command(["history"]) do
+    IO.puts("Sending history:")
+    transactions =
+      Data.list_transaction()
+
+    transactions
+    |> Enum.map( fn {id, _tx, amount, status} -> %{"TxId" => id, "Amount" => D.to_string(amount), "Status" => status} end)
+    |> Scribe.print(data: ["TxId", "Amount", "Status"])
+
+  end
+
+  defp handle_command(["debug"]) do
+    transactions =
+      Data.list_transaction()
+
+    IO.puts("Sending history:")
+    IO.inspect(transactions)
+
+    IO.puts("Flaged UTXOs:")
+    FlagUtxo.print_flag_utxos()
   end
 
   defp handle_command(_other) do
