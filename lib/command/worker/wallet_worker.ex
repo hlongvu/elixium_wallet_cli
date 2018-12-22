@@ -5,6 +5,9 @@ defmodule ElixiumWalletCli.Command.Worker.WalletWorker do
   alias ElixiumWalletCli.Command.Worker.WalletWorker
   alias ElixiumWalletCli.Command.Data
   alias ElixiumWalletCli.Store.FlagUtxo
+  alias ElixiumWalletCli.Utils
+
+  require Logger
 
   def create_keyfile(file_name, {public, private}) do
     write_file("#{file_name}.key", private)
@@ -33,43 +36,47 @@ defmodule ElixiumWalletCli.Command.Worker.WalletWorker do
 
 
   def send(to_address, amount) do
-    {amount, _} = amount |> Float.parse()
-    amount = D.from_float(amount)
-    if is_valid_address(to_address) do
-#      IO.puts("OK address: #{is_valid_address(to_address)}")
+
+    with {:ok, amount} <- Utils.get_float_input(amount),
+         true <- Utils.is_valid_address(to_address) do
+
+      amount = D.from_float(amount)
+
       {public, private} = Data.get_current_key()
-
       my_address = Elixium.KeyPair.address_from_pubkey(public)
-      fee = Application.get_env(:elixium_wallet_cli, :default_fee) |> D.from_float()
+      default_fee = Application.get_env(:elixium_wallet_cli, :default_fee)
+      IO.puts("Default transaction fee is: #{default_fee}. If you want to change this transaction's fee, insert it here.")
+      fee = IO.gets("Input your desired fee (Number/Enter<Default fee>/<Other to exit>): ")
+      with {:ok, final_fee} <- Utils.get_float_input(fee, {:ok, default_fee}) do
+          final_fee = D.from_float(final_fee)
 
-      case build_transaction(private, my_address, to_address, amount, fee) do
-        :not_enough_balance ->
-          IO.puts("Not enough balance")
-        :sent ->
-          IO.puts("Sent")
-        :invalid ->
-          IO.puts("Transaction invalid!")
-        :error ->
-          IO.puts("Gossip error!")
-        other ->
-          IO.inspect(other)
+          IO.puts("Fee #{final_fee}")
+
+          case build_transaction(private, my_address, to_address, amount, final_fee) do
+            :not_enough_balance ->
+              IO.puts("Not enough balance")
+            :sent ->
+              IO.puts("Sent")
+            :invalid ->
+              IO.puts("Transaction invalid!")
+            :error ->
+              IO.puts("Gossip error!")
+            other ->
+              IO.inspect(other)
+          end
+      else
+        err ->
+          IO.puts("Input fee is not valid!")
       end
-
     else
-      IO.puts("Receiver address is not valid!")
+      false ->
+        IO.puts("Receiver address is not valid!")
+      :invalid ->
+        IO.puts("Send amount is not valid!")
     end
 
   end
 
-  defp is_valid_address(address) do
-    version = Application.get_env(:elixium_core, :address_version)
-    with <<_key_version::bytes-size(3)>> <> addr <- address do
-      <<compress_pub_key::bytes-size(33), checksum::binary>> = Base58.decode(addr)
-      Elixium.KeyPair.checksum(version, compress_pub_key) == checksum
-    else
-      _err -> false
-    end
-  end
 
   defp find_suitable_inputs(my_address, amount) do
     all_utxos = GenServer.call(:"Elixir.Elixium.Store.UtxoOracle", {:find_by_address, [my_address]}, 60000)

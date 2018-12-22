@@ -16,7 +16,7 @@ defmodule ElixiumWalletCli.Command.Worker do
   end
 
   def run_command(command) do
-    GenServer.call(__MODULE__, {:run_command, command})
+    GenServer.call(__MODULE__, {:run_command, command}, :infinity)
   end
 
   def handle_call({:run_command, command}, _caller, state) do

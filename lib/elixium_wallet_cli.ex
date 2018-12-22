@@ -29,7 +29,7 @@ defmodule ElixiumWalletCli do
             IO.puts("\nStarting Commander")
             ElixiumWalletCli.Command.Supervisor.start_link()
           pid ->
-#            IO.puts("Commander is started")
+            IO.puts("Commander is started")
             pid
         end
   end
